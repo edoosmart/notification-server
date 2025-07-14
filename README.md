@@ -21,78 +21,124 @@
   <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
   [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
-## Description
+# NestJS Notification Service
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Mô tả
 
-## Project setup
+Service quản lý và gửi thông báo sử dụng NestJS framework, MongoDB và Redis.
+
+## Yêu cầu hệ thống
+
+- Docker và Docker Compose
+- Node.js v20 hoặc cao hơn (nếu chạy không dùng Docker)
+
+## Cài đặt và Chạy với Docker
+
+### 1. Khởi động toàn bộ services
 
 ```bash
-$ yarn install
+# Build và chạy tất cả services
+docker-compose up --build
+
+# Chạy ở chế độ detached (chạy ngầm)
+docker-compose up -d --build
 ```
 
-## Compile and run the project
+Sau khi chạy xong, các services sẽ có sẵn tại:
+- API: http://localhost:3000
+- MongoDB Express: http://localhost:8081
+  - Username: dev
+  - Password: dev123
+
+### 2. Quản lý containers
 
 ```bash
-# development
-$ yarn run start
+# Xem logs
+docker-compose logs -f
 
-# watch mode
-$ yarn run start:dev
+# Dừng services
+docker-compose stop
 
-# production mode
-$ yarn run start:prod
+# Dừng và xóa containers
+docker-compose down
+
+# Dừng và xóa containers + volumes
+docker-compose down -v
 ```
 
-## Run tests
+### 3. Thao tác với MongoDB
+
+```bash
+# Truy cập MongoDB shell
+docker exec -it mongo mongosh -u admin -p password123 --authenticationDatabase admin
+
+# Một số lệnh MongoDB hữu ích
+use notification
+show collections
+db.users.find()
+db.notifications.find()
+```
+
+## Cài đặt và Chạy không dùng Docker
+
+```bash
+# Cài đặt dependencies
+$ npm install
+
+# Chạy ở môi trường development
+$ npm run start
+
+# Chạy với watch mode
+$ npm run start:dev
+
+# Chạy ở môi trường production
+$ npm run start:prod
+```
+
+## Cấu trúc Project
+
+```
+nestjs-server/
+├── src/
+│   ├── config/           # Cấu hình Firebase và Redis
+│   ├── notification/     # Module xử lý thông báo
+│   │   ├── dto/         # Data Transfer Objects
+│   │   ├── schemas/     # MongoDB schemas
+│   │   └── ...
+│   └── ...
+├── docker-compose.yml    # Cấu hình Docker Compose
+├── Dockerfile           # Cấu hình build Docker image
+└── ...
+```
+
+## Test
 
 ```bash
 # unit tests
-$ yarn run test
+$ npm run test
 
 # e2e tests
-$ yarn run test:e2e
+$ npm run test:e2e
 
 # test coverage
-$ yarn run test:cov
+$ npm run test:cov
 ```
 
-## Deployment
+## Tài liệu API
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+Sau khi khởi động server, bạn có thể truy cập documentation của API tại:
+http://localhost:3000/api
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+## Môi trường
 
-```bash
-$ yarn install -g @nestjs/mau
-$ mau deploy
+File `.env` cần có các biến môi trường sau:
+```env
+NODE_ENV=development
+MONGO_URI=mongodb://admin:password123@localhost:27017/notification?authSource=admin
+REDIS_HOST=localhost
+REDIS_PORT=6379
 ```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
 
 ## License
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+[MIT licensed](LICENSE)
