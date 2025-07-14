@@ -25,7 +25,7 @@
 
 ## Mô tả
 
-Service quản lý và gửi thông báo sử dụng NestJS framework, MongoDB và Redis.
+Service quản lý và gửi thông báo sử dụng NestJS framework, MongoDB (với TypeORM) và Redis.
 
 ## Yêu cầu hệ thống
 
@@ -103,13 +103,32 @@ nestjs-server/
 │   ├── config/           # Cấu hình Firebase và Redis
 │   ├── notification/     # Module xử lý thông báo
 │   │   ├── dto/         # Data Transfer Objects
-│   │   ├── schemas/     # MongoDB schemas
+│   │   ├── entities/    # TypeORM Entities
 │   │   └── ...
 │   └── ...
 ├── docker-compose.yml    # Cấu hình Docker Compose
 ├── Dockerfile           # Cấu hình build Docker image
 └── ...
 ```
+
+## Công nghệ sử dụng
+
+- NestJS - Framework Node.js
+- TypeORM - ORM cho MongoDB
+- Redis - Cache và quản lý token
+- MongoDB - Cơ sở dữ liệu chính
+- Docker - Container hóa ứng dụng
+
+## API Endpoints
+
+### Users
+- `POST /api/notifications/users` - Tạo người dùng mới
+- `PUT /api/notifications/users/:userId` - Cập nhật thông tin người dùng
+
+### Notifications
+- `POST /api/notifications/send` - Gửi thông báo
+- `GET /api/notifications/users/:userId` - Lấy danh sách thông báo của người dùng
+- `PUT /api/notifications/read/:notificationId` - Đánh dấu thông báo đã đọc
 
 ## Test
 

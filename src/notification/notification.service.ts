@@ -1,107 +1,84 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { Notification } from './schemas/notification.schema';
-import { User, UserDocument } from './schemas/user.schema';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, ObjectId } from 'typeorm';
+import { Notification } from './entities/notification.entity';
+import { User } from './entities/user.entity';
 import { RedisService } from '../config/redis.service';
-// import { FirebaseConfigService } from '../config/firebase-config.service';
 import { CreateUserDto, UpdateUserDto } from './dto/user.dto';
+import { CreateNotificationDto, UpdateNotificationDto } from './dto/notification.dto';
 
 @Injectable()
 export class NotificationService {
   constructor(
-    @InjectModel(Notification.name) private notificationModel: Model<Notification>,
-    @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectRepository(Notification)
+    private notificationRepository: Repository<Notification>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
     private readonly redisService: RedisService,
-    // private readonly firebaseService: FirebaseConfigService,
   ) {}
 
-  async createUser(createUserDto: CreateUserDto) {
-    const user = new this.userModel(createUserDto);
-    const savedUser = await user.save();
-    
-    if (createUserDto.fcmToken) {
-      await this.redisService.setUserToken(savedUser.id, createUserDto.fcmToken);
+  async createUser(createUserDto: CreateUserDto): Promise<User> {
+    const user = this.userRepository.create(createUserDto);
+    await this.userRepository.save(user);
+    if (user.fcmToken) {
+      await this.redisService.setUserToken(user.id.toString(), user.fcmToken);
     }
-    
-    await this.redisService.cacheUser(savedUser.id, savedUser.toJSON());
-    return savedUser;
+    return user;
   }
 
-  async updateUser(userId: string, updateUserDto: UpdateUserDto) {
-    const user = await this.userModel.findById(userId);
+  async updateUser(userId: string, updateUserDto: UpdateUserDto): Promise<User> {
+    const user = await this.userRepository.findOne({ 
+      where: { id: new ObjectId(userId) } 
+    });
     if (!user) {
       throw new NotFoundException('User not found');
-    }
-
-    if (updateUserDto.fcmToken) {
-      await this.redisService.setUserToken(userId, updateUserDto.fcmToken);
     }
 
     Object.assign(user, updateUserDto);
-    const updatedUser = await user.save();
-    await this.redisService.cacheUser(userId, updatedUser.toJSON());
-    
-    return updatedUser;
+    await this.userRepository.save(user);
+
+    if (user.fcmToken) {
+      await this.redisService.setUserToken(user.id.toString(), user.fcmToken);
+    } else {
+      await this.redisService.removeUserToken(user.id.toString());
+    }
+
+    return user;
   }
 
   async sendNotification(
-    userId: string,
-    title: string,
-    body: string,
-    data?: Record<string, any>,
-  ) {
-    const user = await this.userModel.findById(userId);
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    const fcmToken = await this.redisService.getUserToken(userId);
-    if (!fcmToken) {
-      throw new NotFoundException('FCM token not found');
-    }
-
-    // Save notification to MongoDB
-    const notification = new this.notificationModel({
-      userId,
-      title,
-      body,
-      data,
+    createNotificationDto: CreateNotificationDto,
+  ): Promise<Notification> {
+    const user = await this.userRepository.findOne({
+      where: { id: new ObjectId(createNotificationDto.userId) },
     });
-    await notification.save();
-
-    // Send to Firebase
-    // await this.firebaseService.({
-    //   token: fcmToken,
-    //   notification: {
-    //     title,
-    //     body,
-    //   },
-    //   data,
-    // });
-
-    return notification;
-  }
-
-  async getNotifications(userId: string) {
-    const user = await this.userModel.findById(userId);
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    return this.notificationModel
-      .find({ userId })
-      .sort({ createdAt: -1 })
-      .exec();
+    const notification = this.notificationRepository.create({
+      ...createNotificationDto,
+      fcmToken: user.fcmToken,
+    });
+    return this.notificationRepository.save(notification);
   }
 
-  async markAsRead(notificationId: string) {
-    const notification = await this.notificationModel.findById(notificationId);
+  async getNotifications(userId: string): Promise<Notification[]> {
+    return this.notificationRepository.find({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async markAsRead(notificationId: string): Promise<Notification> {
+    const notification = await this.notificationRepository.findOne({
+      where: { id: new ObjectId(notificationId) },
+    });
     if (!notification) {
       throw new NotFoundException('Notification not found');
     }
 
     notification.isRead = true;
-    return notification.save();
+    return this.notificationRepository.save(notification);
   }
 } 

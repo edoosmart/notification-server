@@ -1,12 +1,16 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { NotificationModule } from './notification/notification.module';
-// import { FirebaseConfigService } from './config/firebase-config.service';
 import { RedisService } from './config/redis.service';
 
 @Module({
   imports: [
-    MongooseModule.forRoot(process.env.MONGO_URI || 'mongodb://localhost:27017/notification-service'),
+    TypeOrmModule.forRoot({
+      type: 'mongodb',
+      url: process.env.MONGO_URI || 'mongodb://localhost:27017/notification-service',
+      synchronize: true,
+      autoLoadEntities: true,
+    }),
     NotificationModule,
   ],
   providers: [RedisService],

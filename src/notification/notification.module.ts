@@ -1,18 +1,14 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { NotificationController } from './notification.controller';
 import { NotificationService } from './notification.service';
-import { Notification, NotificationSchema } from './schemas/notification.schema';
-import { User, UserSchema } from './schemas/user.schema';
-// import { FirebaseConfigService } from '../config/firebase-config.service';
+import { Notification } from './entities/notification.entity';
+import { User } from './entities/user.entity';
 import { RedisService } from '../config/redis.service';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([
-      { name: Notification.name, schema: NotificationSchema },
-      { name: User.name, schema: UserSchema },
-    ]),
+    TypeOrmModule.forFeature([Notification, User])
   ],
   controllers: [NotificationController],
   providers: [NotificationService, RedisService],
