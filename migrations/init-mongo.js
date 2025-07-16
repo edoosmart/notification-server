@@ -11,9 +11,6 @@ db.notifications.drop();
 db.createCollection('users');
 db.createCollection('notifications');
 
-// Create unique index for email
-db.users.createIndex({ "email": 1 }, { unique: true });
-
 // Insert sample users
 db.users.insertMany([
   {

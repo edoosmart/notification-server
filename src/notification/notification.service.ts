@@ -6,6 +6,7 @@ import { User } from './entities/user.entity';
 import { RedisService } from '../config/redis.service';
 import { CreateUserDto, UpdateUserDto } from './dto/user.dto';
 import { CreateNotificationDto, UpdateNotificationDto } from './dto/notification.dto';
+import { FirebaseConfigService } from '../config/firebase-config.service';
 
 @Injectable()
 export class NotificationService {
@@ -15,6 +16,7 @@ export class NotificationService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private readonly redisService: RedisService,
+    private readonly firebaseConfigService: FirebaseConfigService,
   ) {}
 
   async createUser(createUserDto: CreateUserDto): Promise<User> {
@@ -46,6 +48,27 @@ export class NotificationService {
     return user;
   }
 
+  private async sendFirebaseNotification(fcmToken: string, title: string, body: string, data?: any) {
+    try {
+      const firebaseAdmin = this.firebaseConfigService.getFirebaseAdmin();
+      const message = {
+        token: fcmToken,
+        notification: {
+          title,
+          body,
+        },
+        data: data || {},
+      };
+
+      const response = await firebaseAdmin.messaging().send(message);
+      console.log('Successfully sent Firebase notification:', response);
+      return response;
+    } catch (error) {
+      console.error('Error sending Firebase notification:', error);
+      throw error;
+    }
+  }
+
   async sendNotification(
     createNotificationDto: CreateNotificationDto,
   ): Promise<Notification> {
@@ -60,6 +83,25 @@ export class NotificationService {
       ...createNotificationDto,
       fcmToken: user.fcmToken,
     });
+
+    // Gửi thông báo qua Firebase nếu có fcmToken
+    if (user.fcmToken) {
+      try {
+        await this.sendFirebaseNotification(
+          user.fcmToken,
+          createNotificationDto.title,
+          createNotificationDto.content,
+          {
+            notificationId: notification.id.toString(),
+            type: createNotificationDto.type || 'default',
+          }
+        );
+      } catch (error) {
+        console.error('Failed to send Firebase notification:', error);
+        // Vẫn lưu thông báo ngay cả khi gửi Firebase thất bại
+      }
+    }
+
     return this.notificationRepository.save(notification);
   }
 

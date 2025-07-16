@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString, IsOptional, IsBoolean } from 'class-validator';
-import { ObjectId } from 'typeorm';
 
 export class CreateNotificationDto {
   @ApiProperty()
@@ -16,12 +15,17 @@ export class CreateNotificationDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  body: string;
+  content: string;
 
   @ApiProperty({ required: false })
   @IsString()
   @IsOptional()
   fcmToken?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  type?: string;
 }
 
 export class UpdateNotificationDto {
@@ -33,7 +37,7 @@ export class UpdateNotificationDto {
 
 export class NotificationResponseDto {
   @ApiProperty()
-  id: ObjectId;
+  id: string;
 
   @ApiProperty()
   userId: string;
@@ -42,10 +46,13 @@ export class NotificationResponseDto {
   title: string;
 
   @ApiProperty()
-  body: string;
+  content: string;
 
   @ApiProperty({ required: false })
   fcmToken?: string;
+
+  @ApiProperty({ required: false })
+  type?: string;
 
   @ApiProperty()
   isRead: boolean;

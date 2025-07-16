@@ -34,7 +34,47 @@ Service quản lý và gửi thông báo sử dụng NestJS framework, MongoDB (
 
 ## Cài đặt và Chạy với Docker
 
-### 1. Khởi động toàn bộ services
+### 1. Cấu hình Firebase
+
+- Tạo thư mục `config` trong thư mục gốc của project
+- Copy file `firebase-key.json` vào thư mục `config`
+- File này sẽ được tự động mount vào container
+
+### 2. Các Services trong Docker
+
+Project bao gồm các services sau:
+- **api**: NestJS application
+  - Port: 3000
+  - Volumes: Tự động mount firebase-key.json
+  - Dependencies: Đợi MongoDB và Redis khởi động xong
+
+- **redis**: Redis server
+  - Port: 6379
+  - Volume: Persistent data storage
+  - Không yêu cầu authentication
+
+- **mongo**: MongoDB server
+  - Port: 27017
+  - Volume: Persistent data storage
+  - Authentication: Enabled
+  - Credentials:
+    - Username: admin
+    - Password: password123
+  - Health check: Tự động kiểm tra kết nối
+
+- **mongo-seed**: Service khởi tạo dữ liệu
+  - Tự động chạy script khởi tạo
+  - Đợi MongoDB sẵn sàng mới chạy
+  - Volume: Mount thư mục migrations
+
+- **mongo-express**: MongoDB Web UI
+  - Port: 8081
+  - Credentials:
+    - Username: dev
+    - Password: dev123
+  - Đợi MongoDB sẵn sàng mới khởi động
+
+### 3. Khởi động Docker
 
 ```bash
 # Build và chạy tất cả services
@@ -44,17 +84,18 @@ docker-compose up --build
 docker-compose up -d --build
 ```
 
-Sau khi chạy xong, các services sẽ có sẵn tại:
-- API: http://localhost:3000
-- MongoDB Express: http://localhost:8081
-  - Username: dev
-  - Password: dev123
-
-### 2. Quản lý containers
+### 4. Quản lý Docker
 
 ```bash
-# Xem logs
+# Xem logs của tất cả services
 docker-compose logs -f
+
+# Xem logs của service cụ thể
+docker-compose logs -f api
+docker-compose logs -f mongo
+
+# Khởi động lại service
+docker-compose restart api
 
 # Dừng services
 docker-compose stop
@@ -62,11 +103,14 @@ docker-compose stop
 # Dừng và xóa containers
 docker-compose down
 
-# Dừng và xóa containers + volumes
+# Dừng và xóa containers + volumes (xóa dữ liệu)
 docker-compose down -v
+
+# Rebuild một service cụ thể
+docker-compose up -d --build api
 ```
 
-### 3. Thao tác với MongoDB
+### 5. Thao tác với MongoDB
 
 ```bash
 # Truy cập MongoDB shell
@@ -77,6 +121,19 @@ use notification
 show collections
 db.users.find()
 db.notifications.find()
+```
+
+### 6. Kiểm tra logs và debug
+
+```bash
+# Xem logs realtime của api
+docker-compose logs -f api
+
+# Kiểm tra status của các services
+docker-compose ps
+
+# Kiểm tra resource usage
+docker stats
 ```
 
 ## Cài đặt và Chạy không dùng Docker

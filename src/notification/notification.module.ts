@@ -5,12 +5,13 @@ import { NotificationService } from './notification.service';
 import { Notification } from './entities/notification.entity';
 import { User } from './entities/user.entity';
 import { RedisService } from '../config/redis.service';
+import { FirebaseConfigService } from '../config/firebase-config.service';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Notification, User])
   ],
   controllers: [NotificationController],
-  providers: [NotificationService, RedisService],
+  providers: [NotificationService, RedisService, FirebaseConfigService],
 })
 export class NotificationModule {} 

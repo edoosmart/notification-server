@@ -1,23 +1,28 @@
 import { Injectable } from '@nestjs/common';
 import * as admin from 'firebase-admin';
+import * as fs from 'fs'
 import { ServiceAccount } from 'firebase-admin';
+import * as path from 'path';
 
 @Injectable()
 export class FirebaseConfigService {
   private firebaseApp: admin.app.App;
 
   constructor() {
-    // TODO: Replace with your Firebase service account credentials
-    const serviceAccount: ServiceAccount = {
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-    };
+    const configPath = path.join(process.cwd(), 'config', 'firebase-key.json');
+    try {
+      const raw = fs.readFileSync(configPath, 'utf8');
+      const serviceAccount: ServiceAccount = JSON.parse(raw);
 
-    this.firebaseApp = admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-    });
-  }
+      this.firebaseApp = admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+      });
+      console.log('Firebase initialized successfully');
+    } catch (error) {
+      console.error('Error loading Firebase configuration:', error);
+      throw error;
+    }
+  }                  
 
   getFirebaseAdmin() {
     return this.firebaseApp;

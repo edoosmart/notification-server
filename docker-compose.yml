@@ -12,6 +12,8 @@ services:
       - MONGO_URI=mongodb://admin:password123@mongo:27017/notification?authSource=admin
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+    volumes:
+      - ./config/firebase-key.json:/app/config/firebase-key.json:ro
     depends_on:
       mongo:
         condition: service_healthy

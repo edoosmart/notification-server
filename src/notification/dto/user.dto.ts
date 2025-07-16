@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsNotEmpty, IsString, IsOptional, IsBoolean } from 'class-validator';
-import { ObjectId } from 'typeorm';
 
 export class CreateUserDto {
   @ApiProperty({ example: 'user@example.com' })
@@ -43,7 +42,7 @@ export class UpdateUserDto {
 
 export class UserResponseDto {
   @ApiProperty()
-  id: ObjectId;
+  id: string;
 
   @ApiProperty()
   email: string;
