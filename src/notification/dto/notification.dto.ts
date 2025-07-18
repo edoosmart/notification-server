@@ -26,6 +26,11 @@ export class CreateNotificationDto {
   @IsString()
   @IsOptional()
   type?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  senderId?: string;
 }
 
 export class UpdateNotificationDto {
@@ -53,6 +58,9 @@ export class NotificationResponseDto {
 
   @ApiProperty({ required: false })
   type?: string;
+
+  @ApiProperty({ required: false })
+  senderId?: string;
 
   @ApiProperty()
   isRead: boolean;

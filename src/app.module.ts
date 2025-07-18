@@ -1,19 +1,24 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 import { NotificationModule } from './notification/notification.module';
-import { RedisService } from './config/redis.service';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
+    ConfigModule.forRoot(),
     TypeOrmModule.forRoot({
       type: 'mongodb',
-      url: process.env.MONGO_URI || 'mongodb://localhost:27017/notification-service',
+      url: process.env.MONGODB_URL || 'mongodb://localhost:27017/notification',
+      entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: true,
-      autoLoadEntities: true,
     }),
     NotificationModule,
+    AuthModule,
   ],
-  providers: [RedisService],
-  exports: [RedisService],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}

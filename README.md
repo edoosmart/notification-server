@@ -27,6 +27,62 @@
 
 Service quản lý và gửi thông báo sử dụng NestJS framework, MongoDB (với TypeORM) và Redis.
 
+## Luồng hoạt động
+
+### 1. Tạo và Gửi Notification
+
+1. **Web Backend tạo Campaign**
+   - Client gửi request tạo campaign thông qua API
+   - Hệ thống lưu thông tin campaign vào database
+   - Trạng thái ban đầu: `pending`
+
+2. **Builder Service xử lý Campaign**
+   - Polling campaign mới từ database
+   - Build danh sách users cần gửi notification
+   - Lưu danh sách users và tokens vào Redis
+   - Cập nhật trạng thái campaign: `ready`
+
+3. **Push Worker xử lý gửi Notification**
+   - Lấy thông tin users và tokens từ Redis
+   - Gửi notification qua Firebase Cloud Messaging
+   - Ghi nhận kết quả gửi vào Response Queue
+   - Cập nhật tiến độ gửi trong database
+
+4. **Response Service xử lý kết quả**
+   - Lấy kết quả từ Response Queue
+   - Cập nhật trạng thái notification trong database
+   - Cập nhật token state trong Redis (nếu token không hợp lệ)
+   - Xử lý retry nếu cần thiết
+
+### 2. Trạng thái Notification
+
+Campaign có các trạng thái sau:
+- `pending`: Mới được tạo
+- `building`: Đang build danh sách users
+- `ready`: Sẵn sàng để gửi
+- `processing`: Đang trong quá trình gửi
+- `completed`: Đã gửi xong
+- `failed`: Gặp lỗi trong quá trình xử lý
+
+Mỗi notification riêng lẻ có các trạng thái:
+- `pending`: Chưa gửi
+- `delivered`: Đã gửi thành công
+- `failed`: Gửi thất bại
+- `read`: Người dùng đã đọc
+
+### 3. Xử lý Token
+
+- FCM tokens được lưu trữ trong Redis để truy cập nhanh
+- Tokens không hợp lệ sẽ tự động được xóa
+- Users có thể cập nhật token mới qua API
+
+### 4. Monitoring và Debug
+
+- Theo dõi tiến độ gửi qua API
+- Logs chi tiết cho từng bước xử lý
+- Thống kê tỷ lệ thành công/thất bại
+- Hỗ trợ retry cho các notification thất bại
+
 ## Yêu cầu hệ thống
 
 - Docker và Docker Compose
@@ -181,11 +237,23 @@ nestjs-server/
 ### Users
 - `POST /api/notifications/users` - Tạo người dùng mới
 - `PUT /api/notifications/users/:userId` - Cập nhật thông tin người dùng
+- `GET /api/notifications/users/:userId` - Lấy thông tin người dùng
 
 ### Notifications
-- `POST /api/notifications/send` - Gửi thông báo
+- `POST /api/notifications/send` - Gửi thông báo đơn lẻ
 - `GET /api/notifications/users/:userId` - Lấy danh sách thông báo của người dùng
 - `PUT /api/notifications/read/:notificationId` - Đánh dấu thông báo đã đọc
+
+### Campaigns
+- `POST /api/notifications/campaigns` - Tạo campaign mới
+- `GET /api/notifications/campaigns` - Lấy danh sách campaigns
+- `GET /api/notifications/campaigns/:campaignId` - Lấy thông tin chi tiết campaign
+- `GET /api/notifications/campaigns/:campaignId/status` - Lấy trạng thái và tiến độ của campaign
+
+### Response Tracking
+- `GET /api/notifications/campaigns/:campaignId/stats` - Lấy thống kê gửi notification
+- `GET /api/notifications/campaigns/:campaignId/failures` - Lấy danh sách gửi thất bại
+- `POST /api/notifications/campaigns/:campaignId/retry` - Thử gửi lại các notification thất bại
 
 ## Test
 
@@ -209,11 +277,36 @@ http://localhost:3000/api
 
 File `.env` cần có các biến môi trường sau:
 ```env
+# Server
 NODE_ENV=development
-MONGO_URI=mongodb://admin:password123@localhost:27017/notification?authSource=admin
+PORT=3000
+
+# MongoDB
+MONGODB_URL=mongodb://admin:password123@localhost:27017/notification?authSource=admin
+
+# Redis
 REDIS_HOST=localhost
 REDIS_PORT=6379
+
+# Firebase
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_PRIVATE_KEY=your-private-key
+FIREBASE_CLIENT_EMAIL=your-client-email
+
+# Authentication
+AUTH_VERIFY_URL=http://localhost:3000/api/auth/verify
+
+# Queue Configuration
+QUEUE_RETRY_ATTEMPTS=3
+QUEUE_RETRY_DELAY=5000
+QUEUE_PROCESS_TIMEOUT=30000
+
+# Campaign Configuration
+CAMPAIGN_BATCH_SIZE=100
+CAMPAIGN_PROCESS_INTERVAL=5000
 ```
+
+Các biến môi trường này có thể được cấu hình trong file `.env` hoặc thông qua Docker environment variables trong `docker-compose.yml`.
 
 ## License
 

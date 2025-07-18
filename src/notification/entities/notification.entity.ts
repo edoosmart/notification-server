@@ -7,9 +7,13 @@ export class Notification {
   @ObjectIdColumn()
   id: ObjectId;
 
-  @ApiProperty()
-  @Column()
-  userId: string;
+  @ApiProperty({ required: false })
+  @Column({ nullable: true })
+  userId?: string;
+
+  @ApiProperty({ required: false })
+  @Column({ nullable: true })
+  senderId?: string;
 
   @ApiProperty()
   @Column()
@@ -17,7 +21,7 @@ export class Notification {
 
   @ApiProperty()
   @Column()
-  body: string;
+  content: string;
 
   @ApiProperty({ required: false })
   @Column({ nullable: true })
@@ -26,6 +30,42 @@ export class Notification {
   @ApiProperty()
   @Column({ default: false })
   isRead: boolean;
+
+  @ApiProperty({ required: false })
+  @Column({ nullable: true })
+  type?: string;
+
+  @ApiProperty()
+  @Column({ default: 'pending' })
+  status: string;
+
+  @ApiProperty({ required: false })
+  @Column({ nullable: true })
+  totalUsers?: number;
+
+  @ApiProperty({ required: false })
+  @Column({ nullable: true })
+  processedUsers?: number;
+
+  @ApiProperty({ required: false })
+  @Column({ nullable: true })
+  successCount?: number;
+
+  @ApiProperty({ required: false })
+  @Column({ nullable: true })
+  failureCount?: number;
+
+  @ApiProperty({ required: false })
+  @Column({ nullable: true })
+  error?: string;
+
+  @ApiProperty({ required: false })
+  @Column({ nullable: true })
+  deliveredAt?: Date;
+
+  @ApiProperty({ required: false })
+  @Column({ nullable: true })
+  failedAt?: Date;
 
   @ApiProperty()
   @CreateDateColumn()

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, ObjectId } from 'typeorm';
 import { Notification } from './entities/notification.entity';
@@ -94,6 +94,7 @@ export class NotificationService {
           {
             notificationId: notification.id.toString(),
             type: createNotificationDto.type || 'default',
+            senderId: createNotificationDto.senderId,
           }
         );
       } catch (error) {
@@ -112,12 +113,18 @@ export class NotificationService {
     });
   }
 
-  async markAsRead(notificationId: string): Promise<Notification> {
+  async markAsRead(notificationId: string, userId: string): Promise<Notification> {
     const notification = await this.notificationRepository.findOne({
       where: { id: new ObjectId(notificationId) },
     });
+    
     if (!notification) {
       throw new NotFoundException('Notification not found');
+    }
+
+    // Kiểm tra quyền - chỉ cho phép user đánh dấu đã đọc thông báo của chính họ
+    if (notification.userId !== userId) {
+      throw new UnauthorizedException('You are not authorized to mark this notification as read');
     }
 
     notification.isRead = true;
