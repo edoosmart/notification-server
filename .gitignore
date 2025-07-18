@@ -58,3 +58,17 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 # Firebase
 /config/firebase-key.json
 *firebase*.json
+
+# Cursor IDE specific files
+.cursor/
+.cursor-server/
+.cursor-tutor/
+
+# Memory Bank (development knowledge)
+# Comment out these lines if you want to include memory-bank in version control
+# memory-bank/conversations/
+# memory-bank/contexts/project-state/
+# memory-bank/evolution/
+
+# Keep memory-bank structure and templates in version control by default
+# Only exclude specific sensitive or temporary content if needed

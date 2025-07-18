@@ -11,3 +11,32 @@ LICENSE
 .editorconfig
 commitlint*
 *.gql
+
+# Cursor IDE specific files
+.cursor/
+.cursor-server/
+.cursor-tutor/
+
+# Memory Bank (not needed in Docker container)
+memory-bank/
+docs/
+
+# Development specific files
+.env*
+!.env.example
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test and coverage files
+test/
+coverage/
+.nyc_output/
+jest.config.*
+
+# Development tools
+.eslintrc*
+.prettierrc*
+.gitignore
+.dockerignore
