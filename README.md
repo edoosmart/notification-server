@@ -28,6 +28,8 @@
 Service quản lý và gửi thông báo sử dụng NestJS framework, MongoDB (với TypeORM) và Redis.
 
 ## Luồng hoạt động
+<img width="827" height="478" alt="image" src="https://github.com/user-attachments/assets/310bb88c-3302-4756-a9fc-4e9b9c28134d" />
+
 
 ### 1. Tạo và Gửi Notification
 
