@@ -11,6 +11,11 @@ export class FirebaseConfigService {
   constructor() {
     const configPath = path.join(process.cwd(), 'config', 'firebase-key.json');
     try {
+      if (!fs.existsSync(configPath)) {
+        console.warn('Firebase config file not found, Firebase will be disabled');
+        return;
+      }
+      
       const raw = fs.readFileSync(configPath, 'utf8');
       const serviceAccount: ServiceAccount = JSON.parse(raw);
 
@@ -20,11 +25,14 @@ export class FirebaseConfigService {
       console.log('Firebase initialized successfully');
     } catch (error) {
       console.error('Error loading Firebase configuration:', error);
-      throw error;
+      console.warn('Firebase will be disabled');
     }
   }                  
 
   getFirebaseAdmin() {
+    if (!this.firebaseApp) {
+      throw new Error('Firebase is not initialized. Please check your configuration.');
+    }
     return this.firebaseApp;
   }
 } 

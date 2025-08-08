@@ -11,15 +11,15 @@ NestJS Notification Service tích hợp với WordPress server để verify user
    ↓
 2. AuthGuard intercepts request
    ↓
-3. AuthService calls WordPress API
+3. AuthService calls WordPress `/wp-json/jwt-auth/v1/token/validate`
    ↓
-4. WordPress validates token
+4. WordPress validates token (expect `code: jwt_auth_valid_token` or HTTP 200)
    ↓
-5. WordPress returns user data
+5. Service does not require WordPress `user` data
    ↓
-6. AuthService normalizes user data
+6. Service optionally decodes JWT payload to attach minimal claims (id/email)
    ↓
-7. User object attached to request
+7. Minimal claims attached to request for internal authorization
    ↓
 8. Controller proceeds với authenticated user
 ```
@@ -59,25 +59,13 @@ Authorization: Bearer <jwt-token>
 Content-Type: application/json
 ```
 
-**Response Format:**
+**Response Format (validate):**
 ```json
 {
   "code": "jwt_auth_valid_token",
   "data": {
     "status": 200,
-    "user": {
-      "id": 1,
-      "user_login": "admin",
-      "user_email": "admin@example.com",
-      "display_name": "Administrator",
-      "user_nicename": "admin",
-      "user_registered": "2024-01-01 00:00:00",
-      "roles": ["administrator"],
-      "capabilities": {
-        "manage_options": true,
-        "edit_posts": true
-      }
-    }
+    // Một số WP không trả về trường user ở endpoint validate
   }
 }
 ```
@@ -143,7 +131,7 @@ function verify_user_token($request) {
 
 ## Data Normalization
 
-### WordPress User Fields → NestJS User Object
+### WordPress User Fields → NestJS User Object (optional)
 ```typescript
 interface WordPressUser {
   // WordPress Standard Fields
@@ -179,7 +167,7 @@ interface NormalizedUser {
 }
 ```
 
-### Normalization Logic
+### Normalization Logic (optional when using /token/validate)
 ```typescript
 private normalizeWordPressUser(wordpressData: any): any {
   return {
@@ -231,12 +219,9 @@ private normalizeWordPressUser(wordpressData: any): any {
 try {
   const response = await this.httpService.post(wordpressUrl, {}, options);
   
-  // Validate response structure
-  if (!response.data || !response.data.user) {
-    throw new UnauthorizedException('Invalid token response from WordPress');
-  }
-  
-  return this.normalizeWordPressUser(response.data);
+  // Validate by code/status only; user field có thể không tồn tại
+  const isValid = response?.data?.code === 'jwt_auth_valid_token' || response?.status === 200;
+  if (!isValid) throw new UnauthorizedException('Invalid access token');
   
 } catch (error) {
   // Log for debugging (no sensitive data)

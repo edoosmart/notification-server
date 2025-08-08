@@ -3,6 +3,11 @@ import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 
+interface AuthenticatedUser {
+  readonly isAuthenticated: boolean;
+  readonly id?: string;
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -10,13 +15,13 @@ export class AuthService {
     private readonly configService: ConfigService,
   ) {}
 
-  async verifyAccessToken(accessToken: string): Promise<any> {
+  async verifyAccessToken(accessToken: string): Promise<AuthenticatedUser> {
     try {
-      // Gọi WordPress API để verify token
-      const wordpressUrl = this.configService.get<string>('WORDPRESS_AUTH_URL') || 
-                          this.configService.get<string>('AUTH_VERIFY_URL') || 
-                          'http://localhost:3000/api/auth/verify';
-      
+      // Gọi WordPress API để verify token (sử dụng endpoint validate)
+      const wordpressUrl =
+        this.configService.get<string>('WORDPRESS_AUTH_URL') ||
+        this.configService.get<string>('AUTH_VERIFY_URL') ||
+        'https://devapp.practice.edoosmart.com/wp-json/jwt-auth/v1/token/validate';
       const response = await firstValueFrom(
         this.httpService.post(
           wordpressUrl,
@@ -26,18 +31,21 @@ export class AuthService {
               Authorization: `Bearer ${accessToken}`,
               'Content-Type': 'application/json',
             },
-            timeout: 10000, // 10 second timeout
-          }
+          },
         )
       );
 
-      // Validate WordPress response structure
-      if (!response.data || !response.data.user) {
-        throw new UnauthorizedException('Invalid token response from WordPress');
+      // Hợp lệ nếu code là 'jwt_auth_valid_token' hoặc HTTP 200
+      const isValid =
+        response?.data?.code === 'jwt_auth_valid_token' || response?.status === 200;
+      if (!isValid) {
+        throw new UnauthorizedException('Token validation failed');
       }
 
-      // Trả về thông tin user từ WordPress
-      return this.normalizeWordPressUser(response.data);
+      // Decode payload để trích xuất userId (nếu có)
+      const payload = this.decodeJwtWithoutVerify(accessToken);
+      const normalized = this.normalizeFromPayload(payload ?? {});
+      return { isAuthenticated: true, ...normalized };
     } catch (error) {
       // Log error for debugging (without sensitive info)
       console.error('WordPress auth verification failed:', {
@@ -50,24 +58,31 @@ export class AuthService {
     }
   }
 
-  private normalizeWordPressUser(wordpressData: any): any {
-    // Normalize WordPress user data to our application format
-    return {
-      id: wordpressData.user?.id || wordpressData.user?.ID,
-      email: wordpressData.user?.user_email || wordpressData.user?.email,
-      name: wordpressData.user?.display_name || wordpressData.user?.name,
-      username: wordpressData.user?.user_login || wordpressData.user?.username,
-      roles: wordpressData.user?.roles || [],
-      capabilities: wordpressData.user?.capabilities || {},
-      // WordPress specific fields
-      wordpressId: wordpressData.user?.id || wordpressData.user?.ID,
-      nicename: wordpressData.user?.user_nicename,
-      registeredDate: wordpressData.user?.user_registered,
-    };
+  private decodeJwtWithoutVerify(token: string): Record<string, unknown> | null {
+    try {
+      const parts = token.split('.');
+      if (parts.length !== 3) return null;
+      const base64Url = parts[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
+      const json = Buffer.from(padded, 'base64').toString('utf8');
+      return JSON.parse(json);
+    } catch {
+      return null;
+    }
+  }
+
+  private normalizeFromPayload(payload: Record<string, unknown>): Omit<AuthenticatedUser, 'isAuthenticated'> {
+    const nestedUser: any = (payload as any)?.user || (payload as any)?.data?.user || payload;
+    const idCandidate = (nestedUser?.sub ?? nestedUser?.id ?? nestedUser?.ID ?? nestedUser?.user_id ?? '') as
+      | string
+      | number;
+    const id = idCandidate !== undefined && idCandidate !== null && `${idCandidate}`.length > 0 ? `${idCandidate}` : undefined;
+    return { id };
   }
 
   // Tạo decorator để bảo vệ các route yêu cầu authentication
-  async validateUser(accessToken: string): Promise<any> {
+  async validateUser(accessToken: string): Promise<AuthenticatedUser> {
     const userData = await this.verifyAccessToken(accessToken);
     if (!userData) {
       throw new UnauthorizedException();

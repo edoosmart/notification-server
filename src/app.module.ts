@@ -11,7 +11,7 @@ import { AuthModule } from './auth/auth.module';
     ConfigModule.forRoot(),
     TypeOrmModule.forRoot({
       type: 'mongodb',
-      url: process.env.MONGODB_URL || 'mongodb://localhost:27017/notification',
+      url: process.env.MONGODB_URL || 'mongodb://admin:password123@localhost:27017/notification?authSource=admin',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: true,
     }),

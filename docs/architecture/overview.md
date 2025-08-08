@@ -98,11 +98,11 @@
 2. AuthGuard intercept
    ↓
 3. AuthService.validateUser()
-   - Call WordPress API
-   - Verify JWT token validity
-   - Normalize WordPress user data
+   - Call WordPress `/wp-json/jwt-auth/v1/token/validate`
+   - Verify token is valid (code: `jwt_auth_valid_token` or HTTP 200)
+   - Optionally decode JWT payload để lấy minimal claims (id/email) phục vụ authorization nội bộ
    ↓
-4. User object attached to request
+4. Minimal user claims attached to request (không phụ thuộc dữ liệu `user` từ WordPress)
    ↓
 5. Controller access with user context
 ```
